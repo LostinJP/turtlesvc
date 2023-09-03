@@ -10,8 +10,8 @@ plotly==5.16.1 </br>
 Requests==2.31.0 </br><br>
 
 Add below 2 environment variables to your ENV file. <br>
-SOLSCAN<your key></br>
-HELIUS_API=<your key></br>
+SOLSCAN="your_solscan_api_key"</br>
+HELIUS_API="your_helius_api_key"</br>
 
 ## How to deploy
 Deploy via Amazon Elastic Webstalk service
