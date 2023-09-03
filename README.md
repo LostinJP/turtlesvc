@@ -13,5 +13,6 @@ Requests==2.31.0 </br>
 Deploy via Amazon Elastic Webstalk service
 - Upload with a zip
 - Do *not* rename application.py
+- After deployment invalidate cache on CloudFront (select your Distribution -> Invalidations -> just select a previous invalidation and hit "Copy to New"
 
 
