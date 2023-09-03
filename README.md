@@ -1,6 +1,4 @@
-    ```md
-    ![alt text](assets/vcbanner.png)
-    ```
+![alt text](assets/vcbanner.png)
     
 # turtlesvc
 Repository for dealtoken distribution dashboard
