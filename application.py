@@ -5,20 +5,31 @@ from dash import dash_table
 import plotly.express as px
 import pandas as pd
 from turtledata import TurtleData
+import csv
 
 turtles = TurtleData()
 heliuskey = os.getenv('HELIUS_API')
 url = "https://rpc.helius.xyz/?api-key=" + str(heliuskey)
 
-# dealtokens..to manually find and add
-dealtokens = ['UB3M6AKd3Y539veeU5YpwgLEtyRWm5BAp8o752RDsGp', '5crdN9TzqmVp9zGx1QL78c6bC8cW9UyKqn1DdELeVjxp', 'J4xJFLTXW749CkURcXdprgSuZoNgNyaDBFXtov6dxTc9', '6uxmFTLYx1DhLbf5ER876fHvooVK37SKggCtJCoK5ZzN','AFCJxSQggZxKC6QMJZg34EyEDFhafiw8GgQM6pE81KyC','HGWXEdFs9rtzi9uaXkQFqVu96ADs4e1zgMpKaWBw8YGf','A9P5VMazGBvBJdcRxnwK6QNnbWVUnv1vEibJQbLta9q7','5XMVY2P32dJnDWTUYjjCdDWM2zGfHXtdU4EXKEFK4zro','ABCQncWnMDFAdhbyPFA7aW6Punz2JAdAo75uB8rED8vq','99iqv3UJi8vpN8KjuvMYxf5yqYtNvVGmxdxyPHkE25eX','gcA3eHcJoSEokhMgEEcj1Bjcp9rrs9mVMZhd5AcqriT','9cKUeLQh2aaD3CXAtLtrJj2H59dRbvuXoQyUMXb3GUzS','HWBBqq8oGist4YnRBWzXMtMp5umC2cXskd6hJAN8W57q']
+mintlist = []
+with open("assets/turtlesNFT_mintlist.csv") as csvfile:
+    reader = csv.reader(csvfile)
+    for row in reader:
+        mintlist.append(row[-1]) # Assuming the account is in the first column
+
+
+# Get the dealtokens from turtles class
+dealtokens = turtles.get_dealtokens(url, mintlist)
+dealtokens.append("AFCJxSQggZxKC6QMJZg34EyEDFhafiw8GgQM6pE81KyC")
 
 # create the dataframe
 df = pd.DataFrame()
 for mint in dealtokens:
     df_concat = turtles.create_dataframe(url, mint)
+    print("Created dataframe for " + mint )
     df = pd.concat([df, df_concat])
 df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+df = df.query('Quantity != 0')
 
 # Create a base url for the solscan.io website
 base_url = "https://solscan.io/token/"
@@ -37,13 +48,15 @@ dealtoken_dropdown = dcc.Dropdown(
 
 # Create pie chart for distribution
 color_discrete_sequence = ['limegreen', 'mediumseagreen', 'forestgreen', 'darkgreen', 'olivedrab', 'seagreen']
-df_pivot = pd.pivot_table(df, index='DealToken', values='Wallet', aggfunc='nunique').reset_index()
+df_pivot = pd.pivot_table(df.query('Quantity != 0'), index='DealToken', values='Wallet', aggfunc='nunique').reset_index()
 fig = px.pie(df_pivot, names='DealToken', values='Wallet', title='Unique Wallets per DealToken', hole=0.45, color_discrete_sequence=color_discrete_sequence)
 fig.update_traces(textposition='inside', textinfo='percent+label')
 
 
 # Create the datatable with the supply
-df_pivot2 = pd.pivot_table(df, index='DealToken', values='Supply', aggfunc='max').reset_index()
+df_pivot2 = pd.pivot_table(df.query('Quantity != 0'), index='DealToken', values='Supply', aggfunc='max').reset_index()
+df_pivot2 = df_pivot2.merge(df[['DealToken', 'Quantity']], on='DealToken', how='left')
+df_pivot2 = df_pivot2.groupby('DealToken').agg({'Supply': 'max', 'Quantity': 'median'}).reset_index()
 df_pivot2["Supply"] = df_pivot2.Supply.apply(lambda x : "{:,}".format(x))
 table2 = dash_table.DataTable(
     columns=[{"name": i, "id": i} for i in df_pivot2.columns],
@@ -54,7 +67,6 @@ table2 = dash_table.DataTable(
 )
 
 df["Quantity"] = df.Quantity.apply(lambda x : "{:,}".format(x))
-df["Supply"] = df.Supply.apply(lambda x : "{:,}".format(x))
 # Create table with all records
 table = dash_table.DataTable(
     columns=[{"name": i, "id": i, "presentation": "markdown"} for i in df.columns if i != "WalletURL"],
@@ -65,9 +77,8 @@ table = dash_table.DataTable(
     export_format='csv', 
     style_cell={'textAlign': 'center'}, 
     style_header={
-        'backgroundColor': 'black', 
-        'font': {'size': 14, 'weight': 'bold'},
-        'color': 'white'
+        'backgroundColor': 'limegreen', 
+        'font': {'size': 14, 'weight': 'bold', 'color': 'white'} 
     },
     id="table" 
 )
@@ -95,11 +106,11 @@ app.layout = html.Div(children=[
     dealtoken_dropdown,
     html.Div([
         dcc.Graph(id="token-distro-graph"),
-        dcc.Graph(figure=fig, style={'width': '35%'}),
-        table2
+        dcc.Graph(figure=fig, style={'width': '50%'}),
     ], style={'display': 'flex', 'flex-direction': 'row'}),
     html.Div([
-        table
+        table,
+        table2
     ], style={'width': '100%', 'margin': 'auto'}) 
 ])
 
@@ -128,7 +139,6 @@ def update_graph_and_table(selected_dealtoken):
         title=f"Unique {selected_dealtoken} holders",
         color_discrete_sequence=['limegreen']
     )
-    bar_fig.update_yaxes(title ="UniqueCount")
     
     # Return the pie chart figure and the filtered DataFrame as a dictionary of records
     return bar_fig, filtered_dealtoken.to_dict('records')
