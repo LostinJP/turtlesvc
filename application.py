@@ -57,6 +57,7 @@ fig.update_traces(textposition='inside', textinfo='percent+label')
 df_pivot2 = pd.pivot_table(df.query('Quantity != 0'), index='DealToken', values='Supply', aggfunc='max').reset_index()
 df_pivot2 = df_pivot2.merge(df[['DealToken', 'Quantity']], on='DealToken', how='left')
 df_pivot2 = df_pivot2.groupby('DealToken').agg({'Supply': 'max', 'Quantity': 'median'}).reset_index()
+df_pivot2 = df_pivot2.rename(columns={'Quantity': 'QtyMedianOwned'})
 df_pivot2["Supply"] = df_pivot2.Supply.apply(lambda x : "{:,}".format(x))
 table2 = dash_table.DataTable(
     columns=[{"name": i, "id": i} for i in df_pivot2.columns],
@@ -67,6 +68,7 @@ table2 = dash_table.DataTable(
 )
 
 df["Quantity"] = df.Quantity.apply(lambda x : "{:,}".format(x))
+df["Supply"] = df.Supply.apply(lambda x : "{:,}".format(x))
 # Create table with all records
 table = dash_table.DataTable(
     columns=[{"name": i, "id": i, "presentation": "markdown"} for i in df.columns if i != "WalletURL"],
