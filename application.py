@@ -54,6 +54,7 @@ table2 = dash_table.DataTable(
 )
 
 df["Quantity"] = df.Quantity.apply(lambda x : "{:,}".format(x))
+df["Supply"] = df.Supply.apply(lambda x : "{:,}".format(x))
 # Create table with all records
 table = dash_table.DataTable(
     columns=[{"name": i, "id": i, "presentation": "markdown"} for i in df.columns if i != "WalletURL"],
@@ -64,8 +65,9 @@ table = dash_table.DataTable(
     export_format='csv', 
     style_cell={'textAlign': 'center'}, 
     style_header={
-        'backgroundColor': 'limegreen', 
-        'font': {'size': 14, 'weight': 'bold', 'color': 'white'} 
+        'backgroundColor': 'black', 
+        'font': {'size': 14, 'weight': 'bold'},
+        'color': 'white'
     },
     id="table" 
 )
@@ -126,6 +128,7 @@ def update_graph_and_table(selected_dealtoken):
         title=f"Unique {selected_dealtoken} holders",
         color_discrete_sequence=['limegreen']
     )
+    bar_fig.update_yaxes(title ="UniqueCount")
     
     # Return the pie chart figure and the filtered DataFrame as a dictionary of records
     return bar_fig, filtered_dealtoken.to_dict('records')
